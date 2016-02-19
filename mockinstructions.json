@@ -1,0 +1,21 @@
+{
+    "agi":
+    {
+	"numberOfActivities": "10",
+	"inSequenceOrParallel": "parallel",
+	"between-datetime-range":
+	{
+	    "from-datetime": "15.08.2015T12:00:00-000",
+	    "to-datetime":   "16.08.2015T12:00:00-000",
+	    "interval-in-seconds":   "1",
+	    "time-outlook": "forward"
+	},
+	"statusmap": "mockstatusmap",
+	"demotime": {"createEventEveryNSeconds": "1"}
+    }
+}
+
+	
+			     
+			     
+			     

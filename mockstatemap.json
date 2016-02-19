@@ -1,0 +1,58 @@
+{ "states" :
+  [
+      {"state":
+       {
+	  "id": "A1",
+	  "shortdesc": "create prescription",
+	  "type": "start",
+	  "logprob": "1",
+	  "nextstates": [
+	      {"state": "B1", "logprob": "1"},
+	      {"state": "C2", "logprob": "1"}
+	  ],
+	  "onentry": {
+	      "assign":
+	      [
+		  {"name": "patient", "expr": "random_lookup_one(\"PATIENT\")"},
+		  {"name": "store_location", "expr": "random_lookup_one(\"STORE_LOCATION\")"},
+		  {"name": "drugs", "expr": "random_lookup_many(1,3, \"DRUGS\")"},
+		  {"name": "medical_provider", "expr": "random_lookup_one(1,3, \"MEDICAL_PROVIDER\")"}
+	      ]
+	  }
+       }
+      },
+      
+      {"state":
+       {
+	   "id": "B1",
+	   "shortdesc": "fill prescription",
+	   "nextstates": [
+	       {"state": "C1", "logprob": "1"}
+	   ],
+	   "onentry": {
+	       "assign":
+	       [
+		   {"name": "pharmacist", "expr": "random_lookup_one_dep(\"STORE_LOCATION\", \"PHARMACIST\")"}
+	       ]
+	   }
+       }
+      },
+
+      {"state":
+       {
+	   "id": "C1",
+	   "shortdesc": "pickup prescription",
+	   "type": "end"
+       }
+      },
+      {"state":
+       {
+	   "id": "C2",
+	   "shortdesc": "out of stock prescription",
+	   "type": "end"
+       }
+      }
+  ]
+}
+
+				    
