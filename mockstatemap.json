@@ -21,6 +21,28 @@
 	  }
        }
       },
+
+      {"state":
+       {
+	  "id": "A2",
+	  "shortdesc": "dial prescription refill",
+	  "type": "start",
+	  "logprob": "1",
+	  "nextstates": [
+	      {"state": "B1", "logprob": "1"}
+
+	  ],
+	  "onentry": {
+	      "assign":
+	      [
+		  {"name": "patient", "expr": "random_lookup_one(\"PATIENT\")"},
+		  {"name": "store_location", "expr": "random_lookup_one(\"STORE_LOCATION\")"},
+		  {"name": "drugs", "expr": "random_lookup_many(1,3, \"DRUGS\")"},
+		  {"name": "medical_provider", "expr": "random_lookup_one(1,3, \"MEDICAL_PROVIDER\")"}
+	      ]
+	  }
+       }
+      },
       
       {"state":
        {

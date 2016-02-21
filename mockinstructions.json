@@ -1,17 +1,17 @@
 {
     "agi":
     {
-	"numberOfActivities": "10",
+	"numberOfActivities": "2",
 	"inSequenceOrParallel": "parallel",
 	"between-datetime-range":
 	{
 	    "from-datetime": "15.08.2015T12:00:00-000",
 	    "to-datetime":   "16.08.2015T12:00:00-000",
-	    "interval-in-seconds":   "1",
+	    "interval-in-seconds":   "1000",
 	    "time-outlook": "forward"
 	},
-	"statusmap": "mockstatusmap",
-	"demotime": {"createEventEveryNSeconds": "1"}
+	"statemap": "./mockstatemap.json",
+	"demotime": {"createEventEveryNSeconds": "1000"}
     }
 }
 
