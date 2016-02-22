@@ -1,7 +1,7 @@
 {
     "agi":
     {
-	"numberOfActivities": "2",
+	"numberOfActivities": "1",
 	"inSequenceOrParallel": "parallel",
 	"between-datetime-range":
 	{

@@ -100,16 +100,16 @@ function base_random_lookup_many(num1, num2, qstring) {
 
 
 
-function processAssignments (state, activity) {
+function processAssignments (state, currentObj) {
 
-    var nwattrs = activity.attributes;
+    var nwattrs = currentObj.attributes;
     
     state.state.onentry.assign.forEach(function (e) {
 	nwattrs[e.name] = evalExpr(e.expr);
     });
     
     return {
-	activityId: activity.activityId,
+	activityId: currentObj.activityId,
 	currentState: state.state.shortdesc,
 	attributes: nwattrs
     }

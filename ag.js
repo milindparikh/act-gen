@@ -9,7 +9,7 @@ var statemap;
 var states;
 
 fs.readFile('mockinstructions.json', 'utf8', function (err, data) {
-  if (err) throw err2;
+    if (err) throw err2;
     obj = JSON.parse(data);
     console.log(obj.agi.numberOfActivities);
     console.log(obj.agi.inSequenceOrParallel);
@@ -21,15 +21,13 @@ fs.readFile('mockinstructions.json', 'utf8', function (err, data) {
 	states = statemap.states;
 
 	var currentRun = Guid.create();
-    
+	
 	function done(word) {
 	    console.log(word);
 	    client.quit();
 	}
 	startEventTriggering(currentRun, 0, obj.agi.numberOfActivities, done);
     });
-
-    
 });
 
 
@@ -41,7 +39,7 @@ function  startEventTriggering(currentRun, currentActivityCount, totalActivityCo
 	}
 	else {
 	    processActivity(currentRun, currentActivityCount, totalActivityCount, cb);
-	    }
+	}
     }, obj.agi.demotime.createEventEveryNSeconds);
     
 }
@@ -50,12 +48,9 @@ function  startEventTriggering(currentRun, currentActivityCount, totalActivityCo
 
 
 
-			 
+
 function endEventTriggering (currentRun, currentActivityCount, totalActivityCount, cb) {
     client.scard("run:"+currentRun, function (err, reply) {
-
-//	console.log(" in endEventTriggering -- > " + currentActivityCount + " " + reply + " " +  totalActivityCount);
-	
 	if (currentActivityCount < totalActivityCount ) {
 	    startEventTriggering(currentRun, currentActivityCount, totalActivityCount, cb);
 	}
@@ -73,24 +68,14 @@ function endEventTriggering (currentRun, currentActivityCount, totalActivityCoun
 
 
 function createActivity (currentRun, currentActivityCount, totalActivityCount, cb)  {
-    
     (function (activityId) {startActivity(activityId);}(Guid.create()));
-    
     function startActivity(activityId) {
-//	console.log(currentRun + " --> " + activityId.value);
 	var startState = generateStartState(states);
-	
-
-//	console.log(JSON.stringify(startState));
-	
 	client.sadd("run:"+currentRun, activityId.value, function (err,reply) {
 	    client.sadd("activity:"+activityId.value+":currentState", JSON.stringify(startState), function (err2, reply2) {
-		var currentObj = {activityId: activityId.value, currentState: '', attributes: {}};
-		
-		client.sadd("activity:"+activityId.value+":currentObj", JSON.stringify(currentObj), function (err2, reply2) {
-		    
-		    processActivityWithNextState(currentRun, currentActivityCount+1, totalActivityCount, cb, activityId.value, currentObj, startState) ;
-		});
+		var currentObj = {activityId: activityId.value, currentState: startState.state.shortdesc, attributes: {}};
+		processActivityWithNextState(currentRun, currentActivityCount+1, totalActivityCount, cb, activityId.value, currentObj, startState) ;
+
 	    });
 	});
     }
@@ -98,9 +83,6 @@ function createActivity (currentRun, currentActivityCount, totalActivityCount, c
 
 function processActivity(currentRun, currentActivityCount, totalActivityCount, cb) {
     client.srandmember("run:"+currentRun, function (err, reply) {
-
-
-	
 	if (reply === null) {
 	    endEventTriggering (currentRun, currentActivityCount, totalActivityCount, cb) ;
  	}
@@ -111,8 +93,8 @@ function processActivity(currentRun, currentActivityCount, totalActivityCount, c
 		    currentState = JSON.parse(reply2);
 		    var nextState = generateNextState(currentState);
 		    currentObj = JSON.parse(sCurrentObj);
+		    console.log(sCurrentObj);
 		    
-		
 		    if (nextState === null) {
 			client.srem("run:"+currentRun, reply, function (err3, reply3) {
 			    endEventTriggering (currentRun, currentActivityCount, totalActivityCount, cb) ;
@@ -120,7 +102,7 @@ function processActivity(currentRun, currentActivityCount, totalActivityCount, c
 		    }
 		    else {
 			client.sadd("activity:"+reply+":currentState", JSON.stringify(nextState), function (err4, reply4) {
-//			    console.log(nextState);
+
 			    processActivityWithNextState(currentRun, currentActivityCount, totalActivityCount, cb, reply, currentObj, nextState);
 			});
 		    }
@@ -131,21 +113,134 @@ function processActivity(currentRun, currentActivityCount, totalActivityCount, c
     });
 }
 
+
+
 function processActivityWithNextState(currentRun, currentActivityCount, totalActivityCount, cb, activityId, currentObj, currentState) {
 
-    currentObj.currentState = currentState.state.shortdesc;
+    if (currentState.state.onentry) {
+	if (currentState.state.onentry.assign) {
+	    processAssignmentsWithNextState (currentRun, currentActivityCount, totalActivityCount, cb, currentObj, currentState);
+	}
+	else {
+	    processStateChangeWithNextState (currentRun, currentActivityCount, totalActivityCount, cb, currentObj, currentState) ;
+	}
+    }
+    else {
+	processStateChangeWithNextState (currentRun, currentActivityCount, totalActivityCount, cb, currentObj, currentState) ;
+    }
     
-    client.sadd("activity:"+activityId+":currentObj", JSON.stringify(currentObj), function (err2, reply2) {
-//	console.log(activityId);
-	console.log(currentObj);
-//	console.log(currentState);
+}
+
+
+function processAssignmentsWithNextState (currentRun, currentActivityCount, totalActivityCount, cb, currentObj, currentState) {
+    var numAttribs = 0;
+    currentState.state.onentry.assign.forEach(function (e) {
+	processNameExpressionPair(e.name, e.expr);
+    });
+    
+    function assignNameValueToCurrentObj(name, value) {
+	currentObj.attributes[name] = value;
+	numAttribs++;
+	if (numAttribs == currentState.state.onentry.assign.length) {
+	    processStateChangeWithNextState (currentRun, currentActivityCount, totalActivityCount, cb, currentObj, currentState);
+	}
+    }
+
+    
+    function processNameExpressionPair(name, expr) {
+
+	var funcName = expr.match(/(.*)\(/);
+	var args = expr.match(/.*\((.*)\)/);
+	var realArg = args[1].replace(/"/g, "");
 	
-	endEventTriggering (currentRun, currentActivityCount, totalActivityCount, cb) ;
+	var functionName = funcName[1];
+	
+	if (functionName.match(/_dep/) ) {
+	    assignNameValueToCurrentObj(name, 'NOT_SUPPORTED');
+
+	}
+	else {
+	    if (functionName.match(/random_lookup_one/)) {
+		random_lookup_one( args[1], realArg, name, assignNameValueToCurrentObj);
+	    }
+	    else {
+		assignNameValueToCurrentObj(name, 'NOT_SUPPORTED');
+	    }
+	    
+	}
+	
+	
+
+	
+    }
+    
+
+}
+
+
+function processStateChangeWithNextState (currentRun, currentActivityCount, totalActivityCount, cb, currentObj, currentState) {
+    client.sadd("activity:"+currentObj.activityId+":currentObj",
+		JSON.stringify({activityId: currentObj.activityId,
+				currentState: currentState.state.shortdesc,
+				attributes: currentObj.attributes
+			       }),
+		function (err2, reply2) {
+		    endEventTriggering (currentRun, currentActivityCount, totalActivityCount, cb) ;
+		});
+}
+
+
+
+
+function random_lookup_one(arg, arg1, name, cb) {
+    
+    random_lookup_many(1,1, arg, arg1, name, cb);
+    
+}
+function random_lookup_many(num1, num2, arg, arg1, name, cb) {
+    base_random_lookup_many(num1, num2, arg, arg1, name, cb);
+    
+}
+
+
+function base_random_lookup_many(num1, num2, arg, entity, name, cb) {
+
+
+    
+    client.llen ("METADATA:"+entity, function (err, len) {
+	client.lrange("METADATA:"+entity, 0, len, function (err2, metadata) {
+	    client.get("total:"+entity+"S", function (err3, totalEntities) {
+		
+		if ( (len > 0 ) && ! (totalEntities === null) && (metadata.length > 0) ) {
+		    var randomEntity = getRandomInt(0, totalEntities);
+		    var ret = {};
+		    numAttrs = 0;
+
+		    function processev(e,v) {
+			numAttrs++;
+			ret[e] = v;
+			
+			if (numAttrs == metadata.length) {
+			    cb(name, JSON.stringify(ret));
+			}
+		    }
+		    
+		    metadata.forEach ( function (e) {
+			client.hget(entity+":"+randomEntity, e, function (err, value) {
+			    processev(e, value);
+			});
+		    });
+		}
+		else {
+		    cb(name, "NO DATA AVAILABLE");
+		}
+	    });
+	    
+	});
     });
     
 }
 
-			 
 
 
 function shouldEventCreateActivity (currentRun, currentActivityCount, totalActivityCount) {
@@ -202,7 +297,7 @@ function findStatesByType(states, type) {
     });
     
 }
-    
+
 function findStateById(states, id) {
 
     
@@ -215,5 +310,5 @@ function findStateById(states, id) {
 
 
 function getRandomInt(min, max) {
-  return Math.floor(Math.random() * (max - min)) + min;
+    return Math.floor(Math.random() * (max - min)) + min;
 }
